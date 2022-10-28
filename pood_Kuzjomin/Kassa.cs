@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,8 +19,10 @@ namespace pood_Kuzjomin
 
         SqlConnection connect = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\opilane\source\repos\Daniil Kuzjomin TARpv21\pood_Kuzjomin\pood_Kuzjomin\AppData\Tooded_DB.mdf;Integrated Security=True");
         SqlCommand cmd;
-        SqlDataAdapter adapter_toode, adapter_toode2, adapter_toode3;
-        private int Hind;
+        SqlDataAdapter adapter_toode, adapter_toode2, adapter_toode3, adapter_toode4;
+        public int Hind;
+        
+
 
         public Kassa()
         {
@@ -59,6 +62,8 @@ namespace pood_Kuzjomin
         private void Tsekk_btn_Click(object sender, EventArgs e)
         {
             CreatePdfUsingDocumentBuilder();
+            Kustuta_Korv();
+
         }
 
         private void Lisa_btn_Click(object sender, EventArgs e)
@@ -73,7 +78,25 @@ namespace pood_Kuzjomin
             cmd.ExecuteNonQuery();
             connect.Close();
             Naita_Andmed();
+
+
+
+
         }
+
+
+        private void Kustuta_Korv()
+        {
+            cmd = new SqlCommand("DELETE FROM Korv", connect);
+
+            connect.Open();
+
+            cmd.ExecuteNonQuery();
+
+            connect.Close();
+
+        }
+
 
         public void Naita_Andmed()
         {
@@ -103,10 +126,15 @@ namespace pood_Kuzjomin
         }
 
 
-        public static void CreatePdfUsingDocumentBuilder()
+        public void CreatePdfUsingDocumentBuilder()
         {
             // Set a path to our document.
-            string docPath = @"Result-DocumentBuilder.pdf";
+            string docPath = Path.GetFullPath(@"..\..\Tsekk") + @"\Tsekk.pdf";
+
+            Random rnd = new Random();
+
+            int value = rnd.Next(10000, 99999);
+            
 
             // Create a new document and DocumentBuilder.
             DocumentCore dc = new DocumentCore();
@@ -117,31 +145,67 @@ namespace pood_Kuzjomin
             section.PageSetup.PaperType = PaperType.A4;
 
             // Add 1st paragraph with formatted text.
-            db.CharacterFormat.FontName = "Verdana";
+            db.CharacterFormat.FontName = "Arial";
             db.CharacterFormat.Size = 16;
             db.CharacterFormat.FontColor = SautinSoft.Document.Color.Gray;
-            db.Write("7orochka tšekk");
+            db.Write("Pyatorochka Market");
+            db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
+            db.Write("Reg.kood " + value);
+            db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
+            db.Write("Arve/Kviitung");
+            db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
             // Add a line break into the 1st paragraph.
             db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
             // Add 2nd line to the 1st paragraph, create 2nd paragraph.
-            db.Writeln("");
+            string now = DateTime.Now.ToLongDateString();
+            db.Writeln("Kuupaev " + now);
+
+            db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
+
+
+            
+
+
+            
+
+
+            List<string> Tooded_list = new List<string>();
+
+            Tooded_list.Add("Toode   Kogus   Hind");
+            Tooded_list.Add(nimi1_lbl.Text + "         " + numericUpDown1.Value + "       " + Hind);
+
+
+
+            foreach (var toode in Tooded_list)
+            {
+                db.Writeln(toode);
+            }
+
+            (section.Blocks[0] as Paragraph).ParagraphFormat.Alignment = SautinSoft.Document.HorizontalAlignment.Left;
+
+            db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
+
+            db.Writeln("----------");
+
+            db.Writeln("Kokku:" + Hind);
+
+            (section.Blocks[0] as Paragraph).ParagraphFormat.Alignment = SautinSoft.Document.HorizontalAlignment.Right;
+
+
+            
+
+
+
+
             // Specify the paragraph alignment.
-            (section.Blocks[0] as Paragraph).ParagraphFormat.Alignment = SautinSoft.Document.HorizontalAlignment.Center;
+            (section.Blocks[0] as Paragraph).ParagraphFormat.Alignment = SautinSoft.Document.HorizontalAlignment.Left;
 
             // Add text into the 2nd paragraph.
             db.CharacterFormat.ClearFormatting();
             db.CharacterFormat.Size = 25;
-            db.CharacterFormat.FontColor = SautinSoft.Document.Color.Blue;
+            db.CharacterFormat.FontColor = SautinSoft.Document.Color.Black;
             db.CharacterFormat.Bold = true;
-            db.Write("This is a first line in 2nd paragraph.");
-            // Insert a line break into the 2nd paragraph.
-            db.InsertSpecialCharacter(SpecialCharacterType.LineBreak);
-            // Insert 2nd line with own formatting to the 2nd paragraph.
-            db.CharacterFormat.Size = 20;
-            db.CharacterFormat.FontColor = SautinSoft.Document.Color.DarkGreen;
-            db.CharacterFormat.UnderlineStyle = UnderlineType.Single;
-            db.CharacterFormat.Bold = false;
-            db.Write("This is a second line.");
+
 
             // Save the document to the file in PDF format.
             dc.Save(docPath, new PdfSaveOptions()
@@ -150,10 +214,6 @@ namespace pood_Kuzjomin
             // Open the result for demonstration purposes.
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(docPath) { UseShellExecute = true });
         }
-
-
-
-
 
     }
 }
